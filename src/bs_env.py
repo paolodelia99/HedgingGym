@@ -2,8 +2,8 @@ import numpy as np
 
 from jax import vmap
 
-from gymnasium import Env
-from gymnasium.spaces import Box, Dict
+from gymnasium import Env, spaces
+from gymnasium.spaces import Box, Discrete
 
 from jaxfin.price_engine.black_scholes import european_price, delta_european
 from jaxfin.models.gbm import UnivGeometricBrownianMotion
@@ -16,8 +16,10 @@ def flatten(fn):
 
     return wrapper
 
-class BlackScholesEnv(Env):
+class BlackScholesEnvBase(Env):
     metadata = {"render.modes": ["human"]}
+    action_space: spaces.Space
+    observation_space: spaces.Space
 
     def __init__(
         self,
@@ -39,12 +41,6 @@ class BlackScholesEnv(Env):
         self.dt = expiry / n_steps
         self._current_step = 0
 
-        self.action_space = Box(low=-1.0, high=1.0, shape=(1,))
-        self.observation_space = Box(
-            low=np.array([-np.inf, 0.0, 0.0, 0.0, -1.0], dtype=np.float32),
-            high=np.array([np.inf, np.inf, 1.0, np.inf, 1.0], dtype=np.float32),
-            shape=(5,)
-        )
         self.render_mode = "human"
 
         self._stock_path = np.array([])
@@ -75,13 +71,13 @@ class BlackScholesEnv(Env):
 
         return observations, infos
 
-    def step(self, action):
+    def step(self, action: float):
         self._current_step += 1
 
         done = self._current_step == (self.n_steps - 1)
-        reward = self._calculate_reward(action[0])
+        reward = self._calculate_reward(action)
 
-        self._hedging_portfolio_value = self._calculate_hedging_portfolio_value(action[0])
+        self._hedging_portfolio_value = self._calculate_hedging_portfolio_value(action)
 
         observations = self._get_observations()
         infos = self._get_infos()
@@ -140,8 +136,8 @@ class BlackScholesEnv(Env):
         return self._current_hedging_delta
 
     @current_hedging_delta.setter
-    def current_hedging_delta(self, new_hedge: np.ndarray):
-        self._current_hedging_delta = new_hedge[0]
+    def current_hedging_delta(self, new_hedge: float):
+        self._current_hedging_delta = new_hedge
 
     def _get_log_ratio(self):
         if self._current_step == -1:
@@ -210,6 +206,71 @@ class BlackScholesEnv(Env):
         return self._stock_path[self._current_step, 0]
 
 
+class BlackScholesEnvCont(BlackScholesEnvBase):
+
+    def __init__(
+        self,
+        s0: float,
+        strike: float,
+        expiry: float,
+        r: float,
+        mu: float,
+        sigma: float,
+        n_steps: int,
+    ):
+        super().__init__(
+            s0=s0,
+            strike=strike,
+            expiry=expiry,
+            r=r,
+            mu=mu,
+            sigma=sigma,
+            n_steps=n_steps
+        )
+        self.action_space = Box(low=-1.0, high=1.0, shape=(1,))
+        self.observation_space = Box(
+            low=np.array([-np.inf, 0.0, 0.0, 0.0, -1.0], dtype=np.float32),
+            high=np.array([np.inf, np.inf, 1.0, np.inf, 1.0], dtype=np.float32),
+            shape=(5,)
+        )
+
+    def step(self, action: np.ndarray):
+        new_hedge = action[0]
+        return super().step(new_hedge)
+    
+
+class BlackScholesEnvDis(BlackScholesEnvBase):
+
+    def __init__(
+        self,
+        s0: float,
+        strike: float,
+        expiry: float,
+        r: float,
+        mu: float,
+        sigma: float,
+        n_steps: int,
+    ):
+        super().__init__(
+            s0=s0,
+            strike=strike,
+            expiry=expiry,
+            r=r,
+            mu=mu,
+            sigma=sigma,
+            n_steps=n_steps
+        )
+        self.action_space = Discrete(100)
+        self.observation_space = Box(
+            low=np.array([-np.inf, 0.0, 0.0, 0.0, -1.0], dtype=np.float32),
+            high=np.array([np.inf, np.inf, 1.0, np.inf, 1.0], dtype=np.float32),
+            shape=(5,)
+        )
+
+    def step(self, action: float):
+        return super().step(-(action / 100))
+
+
 if __name__ == '__main__':
     import pprint
 
@@ -217,7 +278,7 @@ if __name__ == '__main__':
 
     SEED = 0
 
-    env = BlackScholesEnv(100, 100, 1, 0.02, 0.05, 0.2, 252)
+    env = BlackScholesEnvCont(100, 100, 1, 0.02, 0.05, 0.2, 252)
     obs, info = env.reset(seed=SEED)
 
     np.random.seed(SEED)
