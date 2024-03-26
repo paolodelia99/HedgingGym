@@ -48,7 +48,9 @@ class BlackScholesEnvBase(Env):
 
         self._hedging_portfolio_value = 0.0
         self._current_hedging_delta = 0.0
+        self._previous_hedging_delta = 0.0
         self._back_account_value = 0.0
+        self._ddelta = 0.0
 
         self._epsilon = 1
         self._lambda = 0.1
@@ -76,24 +78,32 @@ class BlackScholesEnvBase(Env):
         self._current_step += 1
 
         done = self._current_step == (self.n_steps - 1)
-        reward = self._calculate_reward(action)
+        reward = self._calculate_reward()
 
         self._hedging_portfolio_value = self._calculate_hedging_portfolio_value(action)
 
         observations = self._get_observations()
         infos = self._get_infos()
-        self.current_hedging_delta = action
+        self._update_delta(action)
 
         return observations, reward, done, False, infos
 
     def render(self, mode="human"):
         pass
 
-    def _calculate_reward(self, new_delta: float) -> float:
-        pnl = self._calculate_pnl(new_delta)
+    def _update_delta(self, new_delta: float):
+        self._ddelta = new_delta - self.current_hedging_delta
+        self._previous_hedging_delta = self.current_hedging_delta
+        self.current_hedging_delta = new_delta
+
+    def _calculate_reward(self) -> float:
+        if self._current_step == 1:
+            return - self._get_transaction_costs(self.current_hedging_delta)
+
+        pnl = self._calculate_pnl()
         return pnl - self._lambda / 2 * pnl**2
 
-    def _calculate_pnl(self, new_delta: float) -> float:
+    def _calculate_pnl(self) -> float:
         dv = (
             self._call_prices[self._current_step]
             - self._call_prices[self._current_step - 1]
@@ -102,21 +112,23 @@ class BlackScholesEnvBase(Env):
             self._stock_path[self._current_step]
             - self._stock_path[self._current_step - 1]
         )[0]
-        ddelta = new_delta - self.current_hedging_delta
+        ddelta = self._ddelta
 
         if self._current_step == (self.n_steps - 1):
-            liquidation_value = self._get_transaction_costs(new_delta)
+            liquidation_value = self._get_transaction_costs(self.current_hedging_delta)
             return (
                 dv
-                + new_delta * ds
+                + self.current_hedging_delta * ds
                 - self._get_transaction_costs(ddelta)
                 - liquidation_value
             )
 
-        return dv + new_delta * ds - self._get_transaction_costs(ddelta)
+        return (
+            dv + self.current_hedging_delta * ds - self._get_transaction_costs(ddelta)
+        )
 
-    def _get_transaction_costs(self, ddelta):
-        return self._epsilon * self._tick_size * (ddelta + 0.01 * ddelta**2)
+    def _get_transaction_costs(self, ddelta: float):
+        return self._epsilon * self._tick_size * (np.abs(ddelta) + 0.01 * ddelta**2)
 
     def _get_observations(self):
         log_price_strike = self._get_log_ratio()
@@ -129,7 +141,7 @@ class BlackScholesEnvBase(Env):
                 self.sigma,
                 time_to_expiration,
                 bs_delta,
-                call_price,
+                call_price / self._call_prices[0],
                 self.current_hedging_delta,
             ],
             dtype=np.float32,
@@ -241,7 +253,7 @@ class BlackScholesEnvCont(BlackScholesEnvBase):
             sigma=sigma,
             n_steps=n_steps,
         )
-        self.action_space = Box(low=-1.0, high=1.0, shape=(1,))
+        self.action_space = Box(low=-1.0, high=0.0, shape=(1,))
         self.observation_space = Box(
             low=np.array([-np.inf, 0.0, 0.0, 0.0, 0.0, -1.0], dtype=np.float32),
             high=np.array([np.inf, 2.0, np.inf, 1.0, np.inf, 1.0], dtype=np.float32),
@@ -311,7 +323,7 @@ if __name__ == "__main__":
         pp.pprint(obs)
         print("Info:")
         pp.pprint(info)
-        print("Reward:", reward)
+        print("Reward:", reward, end='\n\n')
 
         if done:
             obs, info = env.reset(seed=0)
