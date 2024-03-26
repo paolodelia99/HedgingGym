@@ -1,20 +1,19 @@
 import numpy as np
-
-from jax import vmap
-
 from gymnasium import Env, spaces
 from gymnasium.spaces import Box, Discrete
-
-from jaxfin.price_engine.black_scholes import european_price, delta_european
+from jax import vmap
 from jaxfin.models.gbm import UnivGeometricBrownianMotion
+from jaxfin.price_engine.black_scholes import delta_european, european_price
 
 v_delta_european = vmap(delta_european, in_axes=(0, None, None, None, None))
+
 
 def flatten(fn):
     def wrapper(*args, **kwargs):
         return fn(*args, **kwargs).flatten()
 
     return wrapper
+
 
 class BlackScholesEnvBase(Env):
     metadata = {"render.modes": ["human"]}
@@ -64,7 +63,9 @@ class BlackScholesEnvBase(Env):
         self._deltas = self._get_deltas()
         self._hedging_portfolio_value = self._call_prices[0]
         self._current_hedging_delta = -self._deltas[0]
-        self._back_account_value = self._hedging_portfolio_value - self.current_hedging_delta * self.s0
+        self._back_account_value = (
+            self._hedging_portfolio_value - self.current_hedging_delta * self.s0
+        )
 
         observations = self._get_observations()
         infos = self._get_infos()
@@ -101,11 +102,16 @@ class BlackScholesEnvBase(Env):
             self._stock_path[self._current_step]
             - self._stock_path[self._current_step - 1]
         )[0]
-        ddelta = (new_delta - self.current_hedging_delta)
+        ddelta = new_delta - self.current_hedging_delta
 
         if self._current_step == (self.n_steps - 1):
             liquidation_value = self._get_transaction_costs(new_delta)
-            return dv + new_delta * ds - self._get_transaction_costs(ddelta) - liquidation_value
+            return (
+                dv
+                + new_delta * ds
+                - self._get_transaction_costs(ddelta)
+                - liquidation_value
+            )
 
         return dv + new_delta * ds - self._get_transaction_costs(ddelta)
 
@@ -117,7 +123,17 @@ class BlackScholesEnvBase(Env):
         time_to_expiration = self.expiry
         bs_delta = self._deltas[self._current_step]
         call_price = self._call_prices[self._current_step]
-        return np.asarray([log_price_strike, time_to_expiration, bs_delta, call_price, self.current_hedging_delta], dtype=np.float32)
+        return np.asarray(
+            [
+                log_price_strike,
+                self.sigma,
+                time_to_expiration,
+                bs_delta,
+                call_price,
+                self.current_hedging_delta,
+            ],
+            dtype=np.float32,
+        )
 
     def _get_infos(self):
         return {
@@ -128,7 +144,7 @@ class BlackScholesEnvBase(Env):
             "current_delta": self.current_hedging_delta,
             "log(S/K)": self._get_log_ratio(),
             "hedge_portfolio_value": self._hedging_portfolio_value,
-            "bank_account": self._back_account_value
+            "bank_account": self._back_account_value,
         }
 
     @property
@@ -186,8 +202,7 @@ class BlackScholesEnvBase(Env):
         if self._current_step == 0:
             self._hedging_portfolio_value = self._call_prices[0]
             self._back_account_value = (
-                self._hedging_portfolio_value
-                - self._current_hedging_delta * self.s0
+                self._hedging_portfolio_value - self._current_hedging_delta * self.s0
             )
             return self._hedging_portfolio_value
 
@@ -196,8 +211,7 @@ class BlackScholesEnvBase(Env):
             + self._current_hedging_delta * self._get_current_stock_price()
         )
         self._back_account_value = (
-            new_hedging_port_value
-            - new_delta * self._get_current_stock_price()
+            new_hedging_port_value - new_delta * self._get_current_stock_price()
         )
 
         return new_hedging_port_value
@@ -225,19 +239,19 @@ class BlackScholesEnvCont(BlackScholesEnvBase):
             r=r,
             mu=mu,
             sigma=sigma,
-            n_steps=n_steps
+            n_steps=n_steps,
         )
         self.action_space = Box(low=-1.0, high=1.0, shape=(1,))
         self.observation_space = Box(
-            low=np.array([-np.inf, 0.0, 0.0, 0.0, -1.0], dtype=np.float32),
-            high=np.array([np.inf, np.inf, 1.0, np.inf, 1.0], dtype=np.float32),
-            shape=(5,)
+            low=np.array([-np.inf, 0.0, 0.0, 0.0, 0.0, -1.0], dtype=np.float32),
+            high=np.array([np.inf, 2.0, np.inf, 1.0, np.inf, 1.0], dtype=np.float32),
+            shape=(6,),
         )
 
     def step(self, action: np.ndarray):
         new_hedge = action[0]
         return super().step(new_hedge)
-    
+
 
 class BlackScholesEnvDis(BlackScholesEnvBase):
 
@@ -258,20 +272,20 @@ class BlackScholesEnvDis(BlackScholesEnvBase):
             r=r,
             mu=mu,
             sigma=sigma,
-            n_steps=n_steps
+            n_steps=n_steps,
         )
         self.action_space = Discrete(100)
         self.observation_space = Box(
-            low=np.array([-np.inf, 0.0, 0.0, 0.0, -1.0], dtype=np.float32),
-            high=np.array([np.inf, np.inf, 1.0, np.inf, 1.0], dtype=np.float32),
-            shape=(5,)
+            low=np.array([-np.inf, 0.0, 0.0, 0.0, 0.0, -1.0], dtype=np.float32),
+            high=np.array([np.inf, 2.0, np.inf, 1.0, np.inf, 1.0], dtype=np.float32),
+            shape=(6,),
         )
 
     def step(self, action: float):
         return super().step(-(action / 100))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import pprint
 
     pp = pprint.PrettyPrinter(indent=4)
@@ -290,15 +304,15 @@ if __name__ == '__main__':
 
         action = env.action_space.sample()
         obs, reward, done, _, info = env.step(action)
-        
-        print(f'Step: {i}')
-        print('Action:', action)
-        print('Observations:')
+
+        print(f"Step: {i}")
+        print("Action:", action)
+        print("Observations:")
         pp.pprint(obs)
-        print('Info:')
+        print("Info:")
         pp.pprint(info)
-        print('Reward:', reward)
+        print("Reward:", reward)
 
         if done:
             obs, info = env.reset(seed=0)
-            print('Resetting environment...')
+            print("Resetting environment...")
