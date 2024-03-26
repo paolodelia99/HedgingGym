@@ -41,8 +41,8 @@ class BlackScholesEnv(Env):
 
         self.action_space = Box(low=-1.0, high=1.0, shape=(1,))
         self.observation_space = Box(
-            low=np.array([-np.inf, 0.0, -1.0, 0.0, -np.inf], dtype=np.float32),
-            high=np.array([np.inf, np.inf, 1.0, np.inf, np.inf], dtype=np.float32),
+            low=np.array([-np.inf, 0.0, 0.0, 0.0, -1.0], dtype=np.float32),
+            high=np.array([np.inf, np.inf, 1.0, np.inf, 1.0], dtype=np.float32),
             shape=(5,)
         )
         self.render_mode = "human"
@@ -67,7 +67,7 @@ class BlackScholesEnv(Env):
         self._call_prices = self._get_call_prices()
         self._deltas = self._get_deltas()
         self._hedging_portfolio_value = self._call_prices[0]
-        self._current_hedging_delta = self._deltas[0]
+        self._current_hedging_delta = -self._deltas[0]
         self._back_account_value = self._hedging_portfolio_value - self.current_hedging_delta * self.s0
 
         observations = self._get_observations()
@@ -81,11 +81,11 @@ class BlackScholesEnv(Env):
         done = self._current_step == (self.n_steps - 1)
         reward = self._calculate_reward(action[0])
 
-        self.current_hedging_delta = action
-        self._hedging_portfolio_value = self._calculate_hedging_portfolio_value()
+        self._hedging_portfolio_value = self._calculate_hedging_portfolio_value(action[0])
 
         observations = self._get_observations()
         infos = self._get_infos()
+        self.current_hedging_delta = action
 
         return observations, reward, done, False, infos
 
@@ -121,18 +121,18 @@ class BlackScholesEnv(Env):
         time_to_expiration = self.expiry
         bs_delta = self._deltas[self._current_step]
         call_price = self._call_prices[self._current_step]
-        return np.asarray([log_price_strike, time_to_expiration, bs_delta, call_price, self._hedging_portfolio_value], dtype=np.float32)
+        return np.asarray([log_price_strike, time_to_expiration, bs_delta, call_price, self.current_hedging_delta], dtype=np.float32)
 
     def _get_infos(self):
         return {
             "price": self._call_prices[self._current_step],
             "time_to_expiration": self.expiry - self._current_step * self.dt,
             "bs_delta": self._deltas[self._current_step],
-            "stock_price": np.asarray(self._stock_path[self._current_step])[0],
+            "stock_price": self._get_current_stock_price(),
             "current_delta": self.current_hedging_delta,
             "log(S/K)": self._get_log_ratio(),
             "hedge_portfolio_value": self._hedging_portfolio_value,
-            "bank_account": self._back_account_value,
+            "bank_account": self._back_account_value
         }
 
     @property
@@ -186,25 +186,28 @@ class BlackScholesEnv(Env):
             ]
         )
 
-    def _calculate_hedging_portfolio_value(self):
-        if self._current_step == -1:
+    def _calculate_hedging_portfolio_value(self, new_delta: float):
+        if self._current_step == 0:
             self._hedging_portfolio_value = self._call_prices[0]
             self._back_account_value = (
                 self._hedging_portfolio_value
-                - self._current_hedging_delta * self._stock_path[0]
+                - self._current_hedging_delta * self.s0
             )
             return self._hedging_portfolio_value
 
         new_hedging_port_value = (
             self._back_account_value
-            + self._current_hedging_delta * self._stock_path[self._current_step, 0]
+            + self._current_hedging_delta * self._get_current_stock_price()
         )
         self._back_account_value = (
             new_hedging_port_value
-            - self._current_hedging_delta * self._stock_path[self._current_step, 0]
+            - new_delta * self._get_current_stock_price()
         )
 
         return new_hedging_port_value
+
+    def _get_current_stock_price(self):
+        return self._stock_path[self._current_step, 0]
 
 
 if __name__ == '__main__':
@@ -212,23 +215,27 @@ if __name__ == '__main__':
 
     pp = pprint.PrettyPrinter(indent=4)
 
-    env = BlackScholesEnv(100, 100, 1, 0.02, 0.05, 0.2, 252)
-    obs, info = env.reset(seed=0)
+    SEED = 0
 
-    print('Observations:')
-    pp.pprint(obs)
+    env = BlackScholesEnv(100, 100, 1, 0.02, 0.05, 0.2, 252)
+    obs, info = env.reset(seed=SEED)
+
+    np.random.seed(SEED)
 
     n_steps = 270
     for i in range(n_steps):
         if i == 252:
             pass
 
-        action = [-1.0] #env.action_space.sample()
+        action = env.action_space.sample()
         obs, reward, done, _, info = env.step(action)
         
         print(f'Step: {i}')
+        print('Action:', action)
         print('Observations:')
         pp.pprint(obs)
+        print('Info:')
+        pp.pprint(info)
         print('Reward:', reward)
 
         if done:
