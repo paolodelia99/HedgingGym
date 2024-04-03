@@ -3,16 +3,16 @@ from gymnasium import spaces
 from gymnasium.spaces import Box, Discrete
 from jax import vmap
 from jaxfin.models.heston import UnivHestonModel
-from jaxfin.price_engine.fft import fourier_inv_call, delta_call_fourier
+from jaxfin.price_engine.fft import delta_call_fourier, fourier_inv_call
 
 from .base import HedgingEnvBase
 
 v_delta_call_fourier = vmap(
-        delta_call_fourier, in_axes=(0, None, None, None, None, None, None, None, None)
-    )
+    delta_call_fourier, in_axes=(0, None, None, None, None, None, None, None, None)
+)
 v_fouirer_inv_call = vmap(
-        fourier_inv_call, in_axes=(0, None, None, None, None, None, None, None, None)
-    )
+    fourier_inv_call, in_axes=(0, None, None, None, None, None, None, None, None)
+)
 
 
 def flatten(fn):
@@ -60,13 +60,14 @@ class HestonEnvBase(HedgingEnvBase):
             seed = 0
 
         heston_process = UnivHestonModel(
-            s0=self.s0, 
-            v0=self.v0, 
+            s0=self.s0,
+            v0=self.v0,
             mean=self.mu,
             kappa=self.kappa,
             theta=self.theta,
             sigma=self.sigma,
-            rho=self.rho)
+            rho=self.rho,
+        )
 
         return np.asarray(heston_process.sample_paths(0, self.expiry, self.n_steps, 1))
 
@@ -79,7 +80,7 @@ class HestonEnvBase(HedgingEnvBase):
                     K=self.strike,
                     T=self.expiry - i * self.dt,
                     v0=self.v0,
-                    r=self.mu,
+                    mu=self.mu,
                     kappa=self.kappa,
                     theta=self.theta,
                     sigma=self.sigma,
@@ -94,15 +95,15 @@ class HestonEnvBase(HedgingEnvBase):
         return np.asarray(
             [
                 v_delta_call_fourier(
-                    s0=self._stock_path[i],
-                    K=self.strike,
-                    T=self.expiry - i * self.dt,
-                    v0=self.v0,
-                    r=self.mu,
-                    kappa=self.kappa,
-                    theta=self.theta,
-                    sigma=self.sigma,
-                    rho=self.rho,
+                    self._stock_path[i],
+                    self.strike,
+                    self.expiry - i * self.dt,
+                    self.v0,
+                    self.mu,
+                    self.theta,
+                    self.sigma,
+                    self.kappa,
+                    self.rho,
                 )
                 for i in range(self.n_steps)
             ]

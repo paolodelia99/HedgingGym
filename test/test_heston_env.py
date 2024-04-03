@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from src.bs_env import BlackScholesEnvCont, BlackScholesEnvDis
+from src.heston_env import HestonEnvCont, HestonEnvDis
 from src.utils.env_checker import check_env
 
 s0 = 100.0
@@ -9,7 +9,11 @@ strike = 100.0
 expiry = 1.0
 r = 0.0
 mu = 0.0
-sigma = 0.2
+v0 = 0.2
+kappa = 2.0
+theta = 0.3
+sigma = 0.1
+rho = -0.5
 n_steps = 252
 dt = expiry / n_steps
 
@@ -17,7 +21,9 @@ SEED = 0
 
 
 def test_check_env_cont():
-    env = BlackScholesEnvCont(s0, strike, expiry, r, mu, sigma, n_steps)
+    env = HestonEnvCont(
+        s0, strike, expiry, r, mu, v0, kappa, theta, sigma, rho, n_steps
+    )
 
     try:
         check_env(env)
@@ -28,7 +34,7 @@ def test_check_env_cont():
 
 
 def test_check_env_dis():
-    env = BlackScholesEnvDis(s0, strike, expiry, r, mu, sigma, n_steps)
+    env = HestonEnvDis(s0, strike, expiry, r, mu, v0, kappa, theta, sigma, rho, n_steps)
 
     try:
         check_env(env)
@@ -39,11 +45,13 @@ def test_check_env_dis():
 
 
 def test_reset_cont():
-    env = BlackScholesEnvCont(s0, strike, expiry, r, mu, sigma, n_steps)
+    env = HestonEnvCont(
+        s0, strike, expiry, r, mu, v0, kappa, theta, sigma, rho, n_steps
+    )
     obs, info = env.reset(seed=SEED)
 
-    bs_delta_0 = 0.5398278
-    call_price_0 = 7.965561
+    bs_delta_0 = 0.6048372
+    call_price_0 = 19.924908
 
     expected_info = {
         "price": call_price_0,
@@ -53,7 +61,7 @@ def test_reset_cont():
         "current_delta": -bs_delta_0,
         "log(S/K)": np.log(s0 / strike),
         "hedge_portfolio_value": call_price_0,
-        "bank_account": 61.94834327697754,
+        "bank_account": 80.40862560272217,
     }
     expected_obs = np.array(
         [0.0, sigma, 1.0, bs_delta_0, 1.0, -bs_delta_0], dtype=np.float32
@@ -65,11 +73,11 @@ def test_reset_cont():
 
 
 def test_reset_dis():
-    env = BlackScholesEnvDis(s0, strike, expiry, r, mu, sigma, n_steps)
+    env = HestonEnvDis(s0, strike, expiry, r, mu, v0, kappa, theta, sigma, rho, n_steps)
     obs, info = env.reset(seed=SEED)
 
-    bs_delta_0 = 0.5398278
-    call_price_0 = 7.965561
+    bs_delta_0 = 0.6048372
+    call_price_0 = 19.924908
 
     expected_info = {
         "price": call_price_0,
@@ -79,7 +87,7 @@ def test_reset_dis():
         "current_delta": -bs_delta_0,
         "log(S/K)": np.log(s0 / strike),
         "hedge_portfolio_value": call_price_0,
-        "bank_account": 61.94834327697754,
+        "bank_account": 80.40862560272217,
     }
     expected_obs = np.array(
         [0.0, sigma, 1.0, bs_delta_0, 1.0, -bs_delta_0], dtype=np.float32
@@ -92,11 +100,13 @@ def test_reset_dis():
 
 @pytest.mark.skip(reason="Skipping this test for now")
 def test_step():
-    env = BlackScholesEnvCont(s0, strike, expiry, r, mu, sigma, n_steps)
+    env = HestonEnvCont(
+        s0, strike, expiry, r, mu, v0, kappa, theta, sigma, rho, n_steps
+    )
     obs, info = env.reset(seed=SEED)
 
-    bs_delta_0 = 0.5398278
-    call_price_0 = 7.965561
+    bs_delta_0 = 0.6048372
+    call_price_0 = 19.924908
 
     action = np.array([bs_delta_0], dtype=np.float32)
     obs, reward, done, info = env.step(action)

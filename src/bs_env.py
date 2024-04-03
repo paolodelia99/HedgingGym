@@ -172,7 +172,7 @@ if __name__ == "__main__":
         pp.pprint(obs)
         print("Info:")
         pp.pprint(info)
-        print("Reward:", reward, end='\n\n')
+        print("Reward:", reward, end="\n\n")
 
         if done:
             obs, info = env.reset(seed=0)

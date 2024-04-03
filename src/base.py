@@ -89,7 +89,7 @@ class HedgingEnvBase(Env):
 
     def _calculate_reward(self) -> float:
         if self._current_step == 1:
-            return - self._get_transaction_costs(self.current_hedging_delta)
+            return -self._get_transaction_costs(self.current_hedging_delta)
 
         pnl = self._calculate_pnl()
         return pnl - self._lambda / 2 * pnl**2
