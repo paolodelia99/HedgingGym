@@ -2,12 +2,17 @@ import numpy as np
 from gymnasium import spaces
 from gymnasium.spaces import Box, Discrete
 from jax import vmap
-from jaxfin.models.gbm import UnivGeometricBrownianMotion
-from jaxfin.price_engine.black_scholes import delta_european, european_price
+from jaxfin.models.heston import UnivHestonModel
+from jaxfin.price_engine.fft import fourier_inv_call, delta_call_fourier
 
 from .base import HedgingEnvBase
 
-v_delta_european = vmap(delta_european, in_axes=(0, None, None, None, None))
+v_delta_call_fourier = vmap(
+        delta_call_fourier, in_axes=(0, None, None, None, None, None, None, None, None)
+    )
+v_fouirer_inv_call = vmap(
+        fourier_inv_call, in_axes=(0, None, None, None, None, None, None, None, None)
+    )
 
 
 def flatten(fn):
@@ -17,7 +22,7 @@ def flatten(fn):
     return wrapper
 
 
-class BlackScholesEnvBase(HedgingEnvBase):
+class HestonEnvBase(HedgingEnvBase):
     metadata = {"render.modes": ["human"]}
     action_space: spaces.Space
     observation_space: spaces.Space
@@ -29,7 +34,11 @@ class BlackScholesEnvBase(HedgingEnvBase):
         expiry: float,
         r: float,
         mu: float,
+        v0: float,
+        kappa: float,
+        theta: float,
         sigma: float,
+        rho: float,
         n_steps: int,
     ):
         super().__init__(
@@ -41,25 +50,40 @@ class BlackScholesEnvBase(HedgingEnvBase):
             sigma=sigma,
             n_steps=n_steps,
         )
+        self.v0 = v0
+        self.kappa = kappa
+        self.theta = theta
+        self.rho = rho
 
     def _generate_stock_path(self, seed=None) -> np.ndarray:
         if seed:
             seed = 0
 
-        gbm = UnivGeometricBrownianMotion(self.s0, self.mu, self.sigma)
+        heston_process = UnivHestonModel(
+            s0=self.s0, 
+            v0=self.v0, 
+            mean=self.mu,
+            kappa=self.kappa,
+            theta=self.theta,
+            sigma=self.sigma,
+            rho=self.rho)
 
-        return np.asarray(gbm.sample_paths(0, self.expiry, self.n_steps, 1))
+        return np.asarray(heston_process.sample_paths(0, self.expiry, self.n_steps, 1))
 
     @flatten
     def _get_call_prices(self) -> np.ndarray:
         return np.asarray(
             [
-                european_price(
-                    self._stock_path[i],
-                    self.strike,
-                    self.expiry - i * self.dt,
-                    self.sigma,
-                    self.r,
+                fourier_inv_call(
+                    s0=self._stock_path[i],
+                    K=self.strike,
+                    T=self.expiry - i * self.dt,
+                    v0=self.v0,
+                    r=self.mu,
+                    kappa=self.kappa,
+                    theta=self.theta,
+                    sigma=self.sigma,
+                    rho=self.rho,
                 )
                 for i in range(self.n_steps)
             ]
@@ -69,19 +93,23 @@ class BlackScholesEnvBase(HedgingEnvBase):
     def _get_deltas(self) -> np.ndarray:
         return np.asarray(
             [
-                v_delta_european(
-                    self._stock_path[i],
-                    self.strike,
-                    self.expiry - i * self.dt,
-                    self.sigma,
-                    self.r,
+                v_delta_call_fourier(
+                    s0=self._stock_path[i],
+                    K=self.strike,
+                    T=self.expiry - i * self.dt,
+                    v0=self.v0,
+                    r=self.mu,
+                    kappa=self.kappa,
+                    theta=self.theta,
+                    sigma=self.sigma,
+                    rho=self.rho,
                 )
                 for i in range(self.n_steps)
             ]
         )
 
 
-class BlackScholesEnvCont(BlackScholesEnvBase):
+class HestonEnvCont(HestonEnvBase):
 
     def __init__(
         self,
@@ -90,7 +118,11 @@ class BlackScholesEnvCont(BlackScholesEnvBase):
         expiry: float,
         r: float,
         mu: float,
+        v0: float,
+        kappa: float,
+        theta: float,
         sigma: float,
+        rho: float,
         n_steps: int,
     ):
         super().__init__(
@@ -99,10 +131,14 @@ class BlackScholesEnvCont(BlackScholesEnvBase):
             expiry=expiry,
             r=r,
             mu=mu,
+            v0=v0,
+            kappa=kappa,
+            theta=theta,
             sigma=sigma,
+            rho=rho,
             n_steps=n_steps,
         )
-        self.action_space = Box(low=-1.0, high=0.0, shape=(1,))
+        self.action_space = Box(low=-1, high=0.0, shape=(1,))
         self.observation_space = Box(
             low=np.array([-np.inf, 0.0, 0.0, 0.0, 0.0, -1.0], dtype=np.float32),
             high=np.array([np.inf, 2.0, np.inf, 1.0, np.inf, 1.0], dtype=np.float32),
@@ -114,7 +150,7 @@ class BlackScholesEnvCont(BlackScholesEnvBase):
         return super().step(new_hedge)
 
 
-class BlackScholesEnvDis(BlackScholesEnvBase):
+class HestonEnvDis(HestonEnvBase):
 
     def __init__(
         self,
@@ -123,7 +159,11 @@ class BlackScholesEnvDis(BlackScholesEnvBase):
         expiry: float,
         r: float,
         mu: float,
+        v0: float,
+        kappa: float,
+        theta: float,
         sigma: float,
+        rho: float,
         n_steps: int,
     ):
         super().__init__(
@@ -132,7 +172,11 @@ class BlackScholesEnvDis(BlackScholesEnvBase):
             expiry=expiry,
             r=r,
             mu=mu,
+            v0=v0,
+            kappa=kappa,
+            theta=theta,
             sigma=sigma,
+            rho=rho,
             n_steps=n_steps,
         )
         self.action_space = Discrete(100)
@@ -144,36 +188,3 @@ class BlackScholesEnvDis(BlackScholesEnvBase):
 
     def step(self, action: float):
         return super().step(-(action / 100))
-
-
-if __name__ == "__main__":
-    import pprint
-
-    pp = pprint.PrettyPrinter(indent=4)
-
-    SEED = 0
-
-    env = BlackScholesEnvCont(100, 100, 1, 0.02, 0.05, 0.2, 252)
-    obs, info = env.reset(seed=SEED)
-
-    np.random.seed(SEED)
-
-    n_steps = 270
-    for i in range(n_steps):
-        if i == 252:
-            pass
-
-        action = env.action_space.sample()
-        obs, reward, done, _, info = env.step(action)
-
-        print(f"Step: {i}")
-        print("Action:", action)
-        print("Observations:")
-        pp.pprint(obs)
-        print("Info:")
-        pp.pprint(info)
-        print("Reward:", reward, end='\n\n')
-
-        if done:
-            obs, info = env.reset(seed=0)
-            print("Resetting environment...")
