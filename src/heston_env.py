@@ -47,13 +47,15 @@ class HestonEnvBase(HedgingEnvBase):
             expiry=expiry,
             r=r,
             mu=mu,
-            sigma=sigma,
+            sigma=theta,
             n_steps=n_steps,
         )
         self.v0 = v0
         self.kappa = kappa
         self.theta = theta
         self.rho = rho
+        self.vol_of_vol = sigma
+        self._variance_process = np.asarray([])
 
     def _generate_stock_path(self, seed=None) -> np.ndarray:
         if seed:
@@ -65,11 +67,19 @@ class HestonEnvBase(HedgingEnvBase):
             mean=self.mu,
             kappa=self.kappa,
             theta=self.theta,
-            sigma=self.sigma,
+            sigma=self.vol_of_vol,
             rho=self.rho,
         )
 
-        return np.asarray(heston_process.sample_paths(0, self.expiry, self.n_steps, 1))
+        paths, variance_p = heston_process.sample_paths(0, self.expiry, self.n_steps, 1)
+        paths = np.asarray(paths)
+        variance_p = np.asarray(variance_p).squeeze()
+        self._variance_process = variance_p
+
+        return paths
+
+    def _get_current_stock_vol(self, step: int) -> float:
+        return np.sqrt(self._variance_process[step])
 
     @flatten
     def _get_call_prices(self) -> np.ndarray:
@@ -83,7 +93,7 @@ class HestonEnvBase(HedgingEnvBase):
                     mu=self.mu,
                     kappa=self.kappa,
                     theta=self.theta,
-                    sigma=self.sigma,
+                    sigma=self.vol_of_vol,
                     rho=self.rho,
                 )
                 for i in range(self.n_steps)
@@ -101,7 +111,7 @@ class HestonEnvBase(HedgingEnvBase):
                     self.v0,
                     self.mu,
                     self.theta,
-                    self.sigma,
+                    self.vol_of_vol,
                     self.kappa,
                     self.rho,
                 )

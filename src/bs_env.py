@@ -50,6 +50,9 @@ class BlackScholesEnvBase(HedgingEnvBase):
 
         return np.asarray(gbm.sample_paths(0, self.expiry, self.n_steps, 1))
 
+    def _get_current_stock_vol(self, step: int) -> float:
+        return self.sigma
+
     @flatten
     def _get_call_prices(self) -> np.ndarray:
         return np.asarray(

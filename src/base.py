@@ -129,7 +129,7 @@ class HedgingEnvBase(Env):
         return np.asarray(
             [
                 log_price_strike,
-                self.sigma,
+                self._get_current_stock_vol(self._current_step),
                 time_to_expiration,
                 bs_delta,
                 call_price / self._call_prices[0],
@@ -162,6 +162,10 @@ class HedgingEnvBase(Env):
         if self._current_step == -1:
             return np.log(self.s0 / self.strike)
         return np.log(self._stock_path[self._current_step, 0] / self.strike)
+
+    @abstractmethod
+    def _get_current_stock_vol(self, step: int) -> float:
+        raise NotImplementedError("Subclasses must implement this method")
 
     @abstractmethod
     def _generate_stock_path(self, seed=None) -> np.ndarray:

@@ -64,7 +64,7 @@ def test_reset_cont():
         "bank_account": 80.40862560272217,
     }
     expected_obs = np.array(
-        [0.0, sigma, 1.0, bs_delta_0, 1.0, -bs_delta_0], dtype=np.float32
+        [0.0, 0.4472136, 1.0, bs_delta_0, 1.0, -bs_delta_0], dtype=np.float32
     )
 
     assert np.array_equal(obs, expected_obs)
@@ -90,7 +90,7 @@ def test_reset_dis():
         "bank_account": 80.40862560272217,
     }
     expected_obs = np.array(
-        [0.0, sigma, 1.0, bs_delta_0, 1.0, -bs_delta_0], dtype=np.float32
+        [0.0, 0.4472136, 1.0, bs_delta_0, 1.0, -bs_delta_0], dtype=np.float32
     )
 
     assert np.array_equal(obs, expected_obs)
