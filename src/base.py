@@ -20,6 +20,7 @@ class HedgingEnvBase(Env):
         mu: float,
         sigma: float,
         n_steps: int,
+        ticksize: float = 0.01,
     ):
         self.s0 = s0
         self.strike = strike
@@ -46,14 +47,14 @@ class HedgingEnvBase(Env):
 
         self._epsilon = 1
         self._lambda = 0.1
-        self._tick_size = 0.01
+        self._tick_size = ticksize
 
     def reset(self, seed=None):
         super().reset(seed=seed)
 
         self._current_step = 0
         self._current_pnl = 0.0
-        self._stock_path = self._generate_stock_path(seed=seed)
+        self._stock_path = self._generate_stock_path()
         self._call_prices = self._get_call_prices()
         self._deltas = self._get_deltas()
         self._hedging_portfolio_value = self._call_prices[0]
@@ -172,7 +173,7 @@ class HedgingEnvBase(Env):
         raise NotImplementedError("Subclasses must implement this method")
 
     @abstractmethod
-    def _generate_stock_path(self, seed=None) -> np.ndarray:
+    def _generate_stock_path(self) -> np.ndarray:
         raise NotImplementedError("Subclasses must implement this method")
 
     @abstractmethod
@@ -196,7 +197,7 @@ class HedgingEnvBase(Env):
 
     def _get_current_stock_price(self):
         return self._stock_path[self._current_step, 0]
-    
+
 
 class SpreadHedgingEnvBase(Env):
     metadata = {"render.modes": ["human"]}

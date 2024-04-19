@@ -31,6 +31,7 @@ class BlackScholesEnvBase(HedgingEnvBase):
         mu: float,
         sigma: float,
         n_steps: int,
+        ticksize: float = 0.01,
     ):
         super().__init__(
             s0=s0,
@@ -40,12 +41,10 @@ class BlackScholesEnvBase(HedgingEnvBase):
             mu=mu,
             sigma=sigma,
             n_steps=n_steps,
+            ticksize=ticksize,
         )
 
-    def _generate_stock_path(self, seed=None) -> np.ndarray:
-        if seed:
-            seed = 0
-
+    def _generate_stock_path(self) -> np.ndarray:
         gbm = UnivGeometricBrownianMotion(self.s0, self.mu, self.sigma)
 
         return np.asarray(gbm.sample_paths(self.expiry, self.n_steps, 1))
@@ -95,6 +94,7 @@ class BlackScholesEnvCont(BlackScholesEnvBase):
         mu: float,
         sigma: float,
         n_steps: int,
+        ticksize: float = 0.01,
     ):
         super().__init__(
             s0=s0,
@@ -104,6 +104,7 @@ class BlackScholesEnvCont(BlackScholesEnvBase):
             mu=mu,
             sigma=sigma,
             n_steps=n_steps,
+            ticksize=ticksize,
         )
         self.action_space = Box(low=-1.0, high=0.0, shape=(1,))
         self.observation_space = Box(
@@ -128,6 +129,7 @@ class BlackScholesEnvDis(BlackScholesEnvBase):
         mu: float,
         sigma: float,
         n_steps: int,
+        ticksize: float = 0.01,
     ):
         super().__init__(
             s0=s0,
@@ -137,6 +139,7 @@ class BlackScholesEnvDis(BlackScholesEnvBase):
             mu=mu,
             sigma=sigma,
             n_steps=n_steps,
+            ticksize=ticksize,
         )
         self.action_space = Discrete(100)
         self.observation_space = Box(

@@ -40,6 +40,7 @@ class HestonEnvBase(HedgingEnvBase):
         sigma: float,
         rho: float,
         n_steps: int,
+        ticksize: float = 0.01,
     ):
         super().__init__(
             s0=s0,
@@ -49,6 +50,7 @@ class HestonEnvBase(HedgingEnvBase):
             mu=mu,
             sigma=theta,
             n_steps=n_steps,
+            ticksize=ticksize,
         )
         self.v0 = v0
         self.kappa = kappa
@@ -57,10 +59,7 @@ class HestonEnvBase(HedgingEnvBase):
         self.vol_of_vol = sigma
         self._variance_process = np.asarray([])
 
-    def _generate_stock_path(self, seed=None) -> np.ndarray:
-        if seed:
-            seed = 0
-
+    def _generate_stock_path(self) -> np.ndarray:
         heston_process = UnivHestonModel(
             s0=self.s0,
             v0=self.v0,
@@ -71,7 +70,7 @@ class HestonEnvBase(HedgingEnvBase):
             rho=self.rho,
         )
 
-        paths, variance_p = heston_process.sample_paths(0, self.expiry, self.n_steps, 1)
+        paths, variance_p = heston_process.sample_paths(self.expiry, self.n_steps, 1)
         paths = np.asarray(paths)
         variance_p = np.asarray(variance_p).squeeze()
         self._variance_process = variance_p
@@ -135,6 +134,7 @@ class HestonEnvCont(HestonEnvBase):
         sigma: float,
         rho: float,
         n_steps: int,
+        ticksize: float = 0.01,
     ):
         super().__init__(
             s0=s0,
@@ -148,6 +148,7 @@ class HestonEnvCont(HestonEnvBase):
             sigma=sigma,
             rho=rho,
             n_steps=n_steps,
+            ticksize=ticksize,
         )
         self.action_space = Box(low=-1, high=0.0, shape=(1,))
         self.observation_space = Box(
@@ -176,6 +177,7 @@ class HestonEnvDis(HestonEnvBase):
         sigma: float,
         rho: float,
         n_steps: int,
+        ticksize: float = 0.01,
     ):
         super().__init__(
             s0=s0,
@@ -189,6 +191,7 @@ class HestonEnvDis(HestonEnvBase):
             sigma=sigma,
             rho=rho,
             n_steps=n_steps,
+            ticksize=ticksize,
         )
         self.action_space = Discrete(100)
         self.observation_space = Box(

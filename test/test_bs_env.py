@@ -53,7 +53,7 @@ def test_reset_cont():
         "current_delta": -bs_delta_0,
         "log(S/K)": np.log(s0 / strike),
         "hedge_portfolio_value": call_price_0,
-        "bank_account": 61.94834327697754,
+        "bank_account": 46.017221450805664,
     }
     expected_obs = np.array(
         [0.0, sigma, 1.0, bs_delta_0, 1.0, -bs_delta_0], dtype=np.float32
@@ -79,7 +79,7 @@ def test_reset_dis():
         "current_delta": -bs_delta_0,
         "log(S/K)": np.log(s0 / strike),
         "hedge_portfolio_value": call_price_0,
-        "bank_account": 61.94834327697754,
+        "bank_account": 46.017221450805664,
     }
     expected_obs = np.array(
         [0.0, sigma, 1.0, bs_delta_0, 1.0, -bs_delta_0], dtype=np.float32
