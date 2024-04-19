@@ -48,7 +48,7 @@ class BlackScholesEnvBase(HedgingEnvBase):
 
         gbm = UnivGeometricBrownianMotion(self.s0, self.mu, self.sigma)
 
-        return np.asarray(gbm.sample_paths(0, self.expiry, self.n_steps, 1))
+        return np.asarray(gbm.sample_paths(self.expiry, self.n_steps, 1))
 
     def _get_current_stock_vol(self, step: int) -> float:
         return self.sigma

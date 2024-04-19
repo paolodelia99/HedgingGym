@@ -6,6 +6,7 @@ Hedging Gym is a reinforcement learning environment for training and testing hed
 
 - Simulates Black-Scholes environment for call option hedging.
 - Supports both discrete and continuous action spaces.
+- Simulates Heston environment for option hedging, for both discrete and continuous action spaces.
 
 ## Installation
 
