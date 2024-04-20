@@ -5,7 +5,7 @@ from jax import vmap
 from jaxfin.models.gbm import UnivGeometricBrownianMotion
 from jaxfin.price_engine.black_scholes import delta_european, european_price
 
-from .base import HedgingEnvBase
+from .base.call_env import HedgingEnvBase
 
 v_delta_european = vmap(delta_european, in_axes=(0, None, None, None, None))
 
@@ -150,36 +150,3 @@ class BlackScholesEnvDis(BlackScholesEnvBase):
 
     def step(self, action: float):
         return super().step(-(action / 100))
-
-
-if __name__ == "__main__":
-    import pprint
-
-    pp = pprint.PrettyPrinter(indent=4)
-
-    SEED = 0
-
-    env = BlackScholesEnvCont(100, 100, 1, 0.02, 0.05, 0.2, 252)
-    obs, info = env.reset(seed=SEED)
-
-    np.random.seed(SEED)
-
-    n_steps = 270
-    for i in range(n_steps):
-        if i == 252:
-            pass
-
-        action = env.action_space.sample()
-        obs, reward, done, _, info = env.step(action)
-
-        print(f"Step: {i}")
-        print("Action:", action)
-        print("Observations:")
-        pp.pprint(obs)
-        print("Info:")
-        pp.pprint(info)
-        print("Reward:", reward, end="\n\n")
-
-        if done:
-            obs, info = env.reset(seed=0)
-            print("Resetting environment...")

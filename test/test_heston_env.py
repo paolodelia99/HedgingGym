@@ -1,5 +1,5 @@
 import numpy as np
-from jaxfin.price_engine.fft import fourier_inv_call, delta_call_fourier
+from jaxfin.price_engine.fft import delta_call_fourier, fourier_inv_call
 
 from src.heston_env import HestonEnvCont, HestonEnvDis
 from src.utils.env_checker import check_env
@@ -107,20 +107,32 @@ def test_step():
     stock_path = env._stock_path[:, 0]
 
     expected_call_prices = np.asarray(
-        [fourier_inv_call(s, strike, expiry - i * dt, v0, mu, theta, sigma, kappa, rho) for i, s in enumerate(stock_path)])
+        [
+            fourier_inv_call(
+                s, strike, expiry - i * dt, v0, mu, theta, sigma, kappa, rho
+            )
+            for i, s in enumerate(stock_path)
+        ]
+    )
     expected_deltas = np.asarray(
-        [delta_call_fourier(s, strike, expiry - i * dt, v0, mu, theta, sigma, kappa, rho) for i, s in enumerate(stock_path)])
+        [
+            delta_call_fourier(
+                s, strike, expiry - i * dt, v0, mu, theta, sigma, kappa, rho
+            )
+            for i, s in enumerate(stock_path)
+        ]
+    )
 
-    call_prices = [info['price']]
-    bs_deltas = [info['bs_delta']]
+    call_prices = [info["price"]]
+    bs_deltas = [info["bs_delta"]]
 
     for i in range(252):
         action = env.action_space.sample()
 
         obs, rewards, done, _, info = env.step(action)
 
-        call_prices.append(info['price'])
-        bs_deltas.append(info['bs_delta'])
+        call_prices.append(info["price"])
+        bs_deltas.append(info["bs_delta"])
 
         if done:
             break

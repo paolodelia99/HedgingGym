@@ -1,5 +1,5 @@
 import numpy as np
-from jaxfin.price_engine.black_scholes import european_price, delta_european
+from jaxfin.price_engine.black_scholes import delta_european, european_price
 
 from src.bs_env import BlackScholesEnvCont, BlackScholesEnvDis
 from src.utils.env_checker import check_env
@@ -96,19 +96,29 @@ def test_step():
     dt = expiry / n_steps
     stock_path = env._stock_path[:, 0]
 
-    expected_call_prices = np.asarray([european_price(s, strike, expiry - i * dt, sigma, r) for i, s in enumerate(stock_path)])
-    expected_deltas = np.asarray([delta_european(s, strike, expiry - i * dt, sigma, r) for i, s in enumerate(stock_path)])
+    expected_call_prices = np.asarray(
+        [
+            european_price(s, strike, expiry - i * dt, sigma, r)
+            for i, s in enumerate(stock_path)
+        ]
+    )
+    expected_deltas = np.asarray(
+        [
+            delta_european(s, strike, expiry - i * dt, sigma, r)
+            for i, s in enumerate(stock_path)
+        ]
+    )
 
-    call_prices = [info['price']]
-    bs_deltas = [info['bs_delta']]
+    call_prices = [info["price"]]
+    bs_deltas = [info["bs_delta"]]
 
     for i in range(252):
         action = env.action_space.sample()
 
         obs, rewards, done, _, info = env.step(action)
 
-        call_prices.append(info['price'])
-        bs_deltas.append(info['bs_delta'])
+        call_prices.append(info["price"])
+        bs_deltas.append(info["bs_delta"])
 
         if done:
             break

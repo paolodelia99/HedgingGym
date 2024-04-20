@@ -5,7 +5,7 @@ from jax import vmap
 from jaxfin.models.heston import UnivHestonModel
 from jaxfin.price_engine.fft import delta_call_fourier, fourier_inv_call
 
-from .base import HedgingEnvBase
+from .base.call_env import HedgingEnvBase
 
 v_delta_call_fourier = vmap(
     delta_call_fourier, in_axes=(0, None, None, None, None, None, None, None, None)
