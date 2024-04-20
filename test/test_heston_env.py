@@ -1,5 +1,5 @@
 import numpy as np
-import pytest
+from jaxfin.price_engine.fft import fourier_inv_call, delta_call_fourier
 
 from src.heston_env import HestonEnvCont, HestonEnvDis
 from src.utils.env_checker import check_env
@@ -98,19 +98,32 @@ def test_reset_dis():
         assert np.isclose(info[key], expected_info[key])
 
 
-@pytest.mark.skip(reason="Skipping this test for now")
 def test_step():
     env = HestonEnvCont(
         s0, strike, expiry, r, mu, v0, kappa, theta, sigma, rho, n_steps
     )
     obs, info = env.reset(seed=SEED)
+    dt = expiry / n_steps
+    stock_path = env._stock_path[:, 0]
 
-    bs_delta_0 = 0.6048372
-    call_price_0 = 19.924908
+    expected_call_prices = np.asarray(
+        [fourier_inv_call(s, strike, expiry - i * dt, v0, mu, theta, sigma, kappa, rho) for i, s in enumerate(stock_path)])
+    expected_deltas = np.asarray(
+        [delta_call_fourier(s, strike, expiry - i * dt, v0, mu, theta, sigma, kappa, rho) for i, s in enumerate(stock_path)])
 
-    action = np.array([bs_delta_0], dtype=np.float32)
-    obs, reward, done, info = env.step(action)
+    call_prices = [info['price']]
+    bs_deltas = [info['bs_delta']]
 
-    expected_obs = np.array(
-        [0.0, 1.0 - dt, bs_delta_0, call_price_0, call_price_0], dtype=np.float32
-    )
+    for i in range(252):
+        action = env.action_space.sample()
+
+        obs, rewards, done, _, info = env.step(action)
+
+        call_prices.append(info['price'])
+        bs_deltas.append(info['bs_delta'])
+
+        if done:
+            break
+
+    np.allclose(np.asarray(call_prices), expected_call_prices)
+    np.allclose(np.asarray(bs_deltas), expected_deltas)

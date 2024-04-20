@@ -1,5 +1,5 @@
 import numpy as np
-import pytest
+from jaxfin.price_engine.black_scholes import european_price, delta_european
 
 from src.bs_env import BlackScholesEnvCont, BlackScholesEnvDis
 from src.utils.env_checker import check_env
@@ -42,8 +42,8 @@ def test_reset_cont():
     env = BlackScholesEnvCont(s0, strike, expiry, r, mu, sigma, n_steps)
     obs, info = env.reset(seed=SEED)
 
-    bs_delta_0 = 0.5398278
-    call_price_0 = 7.965561
+    bs_delta_0 = delta_european(s0, strike, expiry, sigma, r)
+    call_price_0 = european_price(s0, strike, expiry, sigma, r)
 
     expected_info = {
         "price": call_price_0,
@@ -90,17 +90,28 @@ def test_reset_dis():
         assert np.isclose(info[key], expected_info[key])
 
 
-@pytest.mark.skip(reason="Skipping this test for now")
 def test_step():
-    env = BlackScholesEnvCont(s0, strike, expiry, r, mu, sigma, n_steps)
+    env = BlackScholesEnvCont(s0, strike, expiry, r, mu, sigma, n_steps, 0.00)
     obs, info = env.reset(seed=SEED)
+    dt = expiry / n_steps
+    stock_path = env._stock_path[:, 0]
 
-    bs_delta_0 = 0.5398278
-    call_price_0 = 7.965561
+    expected_call_prices = np.asarray([european_price(s, strike, expiry - i * dt, sigma, r) for i, s in enumerate(stock_path)])
+    expected_deltas = np.asarray([delta_european(s, strike, expiry - i * dt, sigma, r) for i, s in enumerate(stock_path)])
 
-    action = np.array([bs_delta_0], dtype=np.float32)
-    obs, reward, done, info = env.step(action)
+    call_prices = [info['price']]
+    bs_deltas = [info['bs_delta']]
 
-    expected_obs = np.array(
-        [0.0, 1.0 - dt, bs_delta_0, call_price_0, call_price_0], dtype=np.float32
-    )
+    for i in range(252):
+        action = env.action_space.sample()
+
+        obs, rewards, done, _, info = env.step(action)
+
+        call_prices.append(info['price'])
+        bs_deltas.append(info['bs_delta'])
+
+        if done:
+            break
+
+    np.allclose(np.asarray(call_prices), expected_call_prices)
+    np.allclose(np.asarray(bs_deltas), expected_deltas)
