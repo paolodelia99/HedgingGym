@@ -257,16 +257,21 @@ class SpreadHedgingEnvBase(Env):
             liquidation_value = self._get_transaction_costs(
                 self.current_hedging_delta_1, self.current_hedging_delta_2
             )
-            transcation_costs = self._get_transaction_costs(
-                self.current_hedging_delta_1, self.current_hedging_delta_2
-            ) + liquidation_value
+            transcation_costs = (
+                self._get_transaction_costs(
+                    self.current_hedging_delta_1, self.current_hedging_delta_2
+                )
+                + liquidation_value
+            )
         else:
             transcation_costs = self._get_transaction_costs(
                 self._ddelta_1, self._ddelta_2
             )
 
         self._back_account_value = (
-            new_hedging_port_value - new_delta_1 * stock_1 - new_delta_2 * stock_2
+            new_hedging_port_value
+            - new_delta_1 * stock_1
+            - new_delta_2 * stock_2
             - transcation_costs
         )
 

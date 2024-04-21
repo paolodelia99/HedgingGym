@@ -65,7 +65,8 @@ class HedgingEnvBase(Env):
         self._hedging_portfolio_value = self._call_prices[0]
         self._current_hedging_delta = -self._deltas[0]
         self._back_account_value = -(
-            self._hedging_portfolio_value + self.current_hedging_delta * self.s0
+            self._hedging_portfolio_value
+            + self.current_hedging_delta * self.s0
             - self._get_transaction_costs(self.current_hedging_delta)
         )
 
@@ -207,12 +208,16 @@ class HedgingEnvBase(Env):
 
         if self._current_step == (self.n_steps - 1):
             liquidation_value = self._get_transaction_costs(self.current_hedging_delta)
-            transcation_costs = self._get_transaction_costs(self.current_hedging_delta) + liquidation_value
+            transcation_costs = (
+                self._get_transaction_costs(self.current_hedging_delta)
+                + liquidation_value
+            )
         else:
             transcation_costs = self._get_transaction_costs(self._ddelta)
 
         self._back_account_value = (
-            new_hedging_port_value - new_delta * self._get_current_stock_price()
+            new_hedging_port_value
+            - new_delta * self._get_current_stock_price()
             - transcation_costs
         )
 
