@@ -6,7 +6,7 @@ from gymnasium import Env, spaces
 
 
 class SpreadHedgingEnvBase(Env):
-    metadata = {"render.modes": ["human"]}
+    metadata = {"render_modes": ["human"]}
     action_space: spaces.Space
     observation_space: spaces.Space
 

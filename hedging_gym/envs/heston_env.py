@@ -4,12 +4,17 @@ import numpy as np
 from gymnasium import spaces
 from gymnasium.spaces import Box, Discrete
 from jax import vmap
-from jaxfin.models.gbm import UnivGeometricBrownianMotion
-from jaxfin.price_engine.black_scholes import delta_european, european_price
+from jaxfin.models.heston import UnivHestonModel
+from jaxfin.price_engine.fft import delta_call_fourier, fourier_inv_call
 
-from .base.call_env import HedgingEnvBase
+from ..base.call_env import HedgingEnvBase
 
-v_delta_european = vmap(delta_european, in_axes=(0, None, None, None, None))
+v_delta_call_fourier = vmap(
+    delta_call_fourier, in_axes=(0, None, None, None, None, None, None, None, None)
+)
+v_fouirer_inv_call = vmap(
+    fourier_inv_call, in_axes=(0, None, None, None, None, None, None, None, None)
+)
 
 
 def flatten(fn):
@@ -19,8 +24,8 @@ def flatten(fn):
     return wrapper
 
 
-class BlackScholesEnvBase(HedgingEnvBase):
-    metadata = {"render.modes": ["human"]}
+class HestonEnvBase(HedgingEnvBase):
+    metadata = {"render_modes": ["human"]}
     action_space: spaces.Space
     observation_space: spaces.Space
 
@@ -31,7 +36,11 @@ class BlackScholesEnvBase(HedgingEnvBase):
         expiry: float,
         r: float,
         mu: float,
+        v0: float,
+        kappa: float,
+        theta: float,
         sigma: float,
+        rho: float,
         n_steps: int,
         ticksize: float = 0.01,
     ):
@@ -41,29 +50,52 @@ class BlackScholesEnvBase(HedgingEnvBase):
             expiry=expiry,
             r=r,
             mu=mu,
-            sigma=sigma,
+            sigma=theta,
             n_steps=n_steps,
             ticksize=ticksize,
         )
+        self.v0 = v0
+        self.kappa = kappa
+        self.theta = theta
+        self.rho = rho
+        self.vol_of_vol = sigma
+        self._variance_process = np.asarray([])
 
     def _generate_stock_path(self) -> np.ndarray:
-        gbm = UnivGeometricBrownianMotion(self.s0, self.mu, self.sigma)
+        heston_process = UnivHestonModel(
+            s0=self.s0,
+            v0=self.v0,
+            mean=self.mu,
+            kappa=self.kappa,
+            theta=self.theta,
+            sigma=self.vol_of_vol,
+            rho=self.rho,
+        )
 
-        return np.asarray(gbm.sample_paths(self.expiry, self.n_steps, 1))
+        paths, variance_p = heston_process.sample_paths(self.expiry, self.n_steps, 1)
+        paths_np = np.asarray(paths)
+        variance_p = np.asarray(variance_p).squeeze()
+        self._variance_process = variance_p
+
+        return paths_np
 
     def _get_current_stock_vol(self, step: int) -> float:
-        return self.sigma
+        return np.sqrt(self._variance_process[step])
 
     @flatten
     def _get_call_prices(self) -> np.ndarray:
         return np.asarray(
             [
-                european_price(
-                    self._stock_path[i],
-                    self.strike,
-                    self.expiry - i * self.dt,
-                    self.sigma,
-                    self.r,
+                fourier_inv_call(
+                    s0=self._stock_path[i],
+                    K=self.strike,
+                    T=self.expiry - i * self.dt,
+                    v0=self.v0,
+                    mu=self.mu,
+                    kappa=self.kappa,
+                    theta=self.theta,
+                    sigma=self.vol_of_vol,
+                    rho=self.rho,
                 )
                 for i in range(self.n_steps)
             ]
@@ -73,19 +105,23 @@ class BlackScholesEnvBase(HedgingEnvBase):
     def _get_deltas(self) -> np.ndarray:
         return np.asarray(
             [
-                v_delta_european(
+                v_delta_call_fourier(
                     self._stock_path[i],
                     self.strike,
                     self.expiry - i * self.dt,
-                    self.sigma,
-                    self.r,
+                    self.v0,
+                    self.mu,
+                    self.theta,
+                    self.vol_of_vol,
+                    self.kappa,
+                    self.rho,
                 )
                 for i in range(self.n_steps)
             ]
         )
 
 
-class BlackScholesEnvCont(BlackScholesEnvBase):
+class HestonEnvCont(HestonEnvBase):
 
     def __init__(
         self,
@@ -94,7 +130,11 @@ class BlackScholesEnvCont(BlackScholesEnvBase):
         expiry: float,
         r: float,
         mu: float,
+        v0: float,
+        kappa: float,
+        theta: float,
         sigma: float,
+        rho: float,
         n_steps: int,
         ticksize: float = 0.01,
     ):
@@ -104,11 +144,15 @@ class BlackScholesEnvCont(BlackScholesEnvBase):
             expiry=expiry,
             r=r,
             mu=mu,
+            v0=v0,
+            kappa=kappa,
+            theta=theta,
             sigma=sigma,
+            rho=rho,
             n_steps=n_steps,
             ticksize=ticksize,
         )
-        self.action_space = Box(low=-1.0, high=0.0, shape=(1,))
+        self.action_space = Box(low=-1, high=0.0, shape=(1,))
         self.observation_space = Box(
             low=np.array([-np.inf, 0.0, 0.0, 0.0, 0.0, -1.0], dtype=np.float32),
             high=np.array([np.inf, 2.0, np.inf, 1.0, np.inf, 1.0], dtype=np.float32),
@@ -116,7 +160,7 @@ class BlackScholesEnvCont(BlackScholesEnvBase):
         )
 
 
-class BlackScholesEnvDis(BlackScholesEnvBase):
+class HestonEnvDis(HestonEnvBase):
 
     def __init__(
         self,
@@ -125,7 +169,11 @@ class BlackScholesEnvDis(BlackScholesEnvBase):
         expiry: float,
         r: float,
         mu: float,
+        v0: float,
+        kappa: float,
+        theta: float,
         sigma: float,
+        rho: float,
         n_steps: int,
         ticksize: float = 0.01,
     ):
@@ -135,7 +183,11 @@ class BlackScholesEnvDis(BlackScholesEnvBase):
             expiry=expiry,
             r=r,
             mu=mu,
+            v0=v0,
+            kappa=kappa,
+            theta=theta,
             sigma=sigma,
+            rho=rho,
             n_steps=n_steps,
             ticksize=ticksize,
         )

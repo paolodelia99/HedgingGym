@@ -1,8 +1,8 @@
 import numpy as np
 
-from src.margrabe_env import MargrabeEnvCont
-from src.math import margrabe, margrabe_deltas
-from src.utils.env_checker import check_env
+from hedging_gym.envs.margrabe_env import MargrabeEnvCont
+from hedging_gym.math import margrabe, margrabe_deltas
+from hedging_gym.utils.env_checker import check_env
 
 s1_0 = 100.0
 s2_0 = 100.0

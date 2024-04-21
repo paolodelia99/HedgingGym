@@ -1,5 +1,5 @@
 SHELL=/bin/bash
-LINT_PATHS=src/ test/
+LINT_PATHS=hedging_gym/ test/
 
 pytest:
 	python -m pytest --no-header -vv

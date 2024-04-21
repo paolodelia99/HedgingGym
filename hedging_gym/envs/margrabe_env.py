@@ -7,8 +7,8 @@ from gymnasium.spaces import Box, Discrete
 from jax import vmap
 from jaxfin.models.gbm import MultiGeometricBrownianMotion
 
-from .base.spread_env import SpreadHedgingEnvBase
-from .math import margrabe, margrabe_deltas
+from ..base.spread_env import SpreadHedgingEnvBase
+from ..math import margrabe, margrabe_deltas
 
 
 def flatten(fn):
@@ -19,7 +19,7 @@ def flatten(fn):
 
 
 class MargrabeEnvBase(SpreadHedgingEnvBase):
-    metadata = {"render.modes": ["human"]}
+    metadata = {"render_modes": ["human"]}
     action_space: spaces.Space
     observation_space: spaces.Space
 

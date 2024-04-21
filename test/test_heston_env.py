@@ -1,8 +1,8 @@
 import numpy as np
 from jaxfin.price_engine.fft import delta_call_fourier, fourier_inv_call
 
-from src.heston_env import HestonEnvCont, HestonEnvDis
-from src.utils.env_checker import check_env
+from hedging_gym.envs.heston_env import HestonEnvCont, HestonEnvDis
+from hedging_gym.utils.env_checker import check_env
 
 s0 = 100.0
 strike = 100.0
