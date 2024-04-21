@@ -1,3 +1,5 @@
+from typing import Union
+
 import numpy as np
 from gymnasium import spaces
 from gymnasium.spaces import Box, Discrete
@@ -71,11 +73,11 @@ class HestonEnvBase(HedgingEnvBase):
         )
 
         paths, variance_p = heston_process.sample_paths(self.expiry, self.n_steps, 1)
-        paths = np.asarray(paths)
+        paths_np = np.asarray(paths)
         variance_p = np.asarray(variance_p).squeeze()
         self._variance_process = variance_p
 
-        return paths
+        return paths_np
 
     def _get_current_stock_vol(self, step: int) -> float:
         return np.sqrt(self._variance_process[step])
@@ -157,10 +159,6 @@ class HestonEnvCont(HestonEnvBase):
             shape=(6,),
         )
 
-    def step(self, action: np.ndarray):
-        new_hedge = action[0]
-        return super().step(new_hedge)
-
 
 class HestonEnvDis(HestonEnvBase):
 
@@ -200,5 +198,5 @@ class HestonEnvDis(HestonEnvBase):
             shape=(6,),
         )
 
-    def step(self, action: float):
+    def step(self, action: Union[float, np.ndarray]):
         return super().step(-(action / 100))

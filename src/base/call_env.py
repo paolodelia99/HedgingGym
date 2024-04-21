@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+from typing import Union
 
 import numpy as np
 from gymnasium import Env, spaces
@@ -72,17 +73,26 @@ class HedgingEnvBase(Env):
 
         return observations, infos
 
-    def step(self, action: float):
+    def _get_action(self, action: Union[np.ndarray, float]) -> float:
+        if isinstance(action, np.ndarray):
+            return action[0]
+        return action
+
+    def step(self, action: Union[np.ndarray, float]):
+        action_f = self._get_action(action)
+
         self._current_step += 1
 
         done = self._current_step == (self.n_steps - 1)
         reward = self._calculate_reward()
 
-        self._hedging_portfolio_value = self._calculate_hedging_portfolio_value(action)
+        self._hedging_portfolio_value = self._calculate_hedging_portfolio_value(
+            action_f
+        )
 
         observations = self._get_observations()
         infos = self._get_infos()
-        self._update_delta(action)
+        self._update_delta(action_f)
 
         return observations, reward, done, False, infos
 

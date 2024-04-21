@@ -43,6 +43,7 @@ def test_check_env_cont():
 
     assert True
 
+
 def test_reset_cont():
     env = MargrabeEnvCont(
         s1_0,
@@ -78,7 +79,18 @@ def test_reset_cont():
         "bank_account": 15.93112564086914,
     }
     expected_obs = np.array(
-        [log_ratio, sigma_1, sigma_2, 1.0, m_delta_1, m_delta_2, 1.0, -m_delta_1, -m_delta_2], dtype=np.float32
+        [
+            log_ratio,
+            sigma_1,
+            sigma_2,
+            1.0,
+            m_delta_1,
+            m_delta_2,
+            1.0,
+            -m_delta_1,
+            -m_delta_2,
+        ],
+        dtype=np.float32,
     )
 
     assert np.array_equal(obs, expected_obs)
