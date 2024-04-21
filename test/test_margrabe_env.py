@@ -33,7 +33,7 @@ def test_check_env_cont():
         sigma_2,
         corr,
         n_steps,
-        0.00,
+        0.01,
     )
 
     try:
@@ -56,7 +56,7 @@ def test_reset_cont():
         sigma_2,
         corr,
         n_steps,
-        0.00,
+        0.01,
     )
     obs, info = env.reset(seed=SEED)
 
@@ -76,7 +76,7 @@ def test_reset_cont():
         "current_delta_2": -m_delta_2,
         "log(S_2/S_1)": log_ratio,
         "hedge_portfolio_value": spread_price,
-        "bank_account": 15.93112564086914,
+        "bank_account": 15.921075323618034,
     }
     expected_obs = np.array(
         [
