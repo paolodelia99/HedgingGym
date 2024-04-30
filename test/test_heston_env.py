@@ -137,5 +137,5 @@ def test_step():
         if done:
             break
 
-    np.allclose(np.asarray(call_prices), expected_call_prices)
-    np.allclose(np.asarray(bs_deltas), expected_deltas)
+    assert np.allclose(np.asarray(call_prices), expected_call_prices)
+    assert np.allclose(np.asarray(bs_deltas), expected_deltas)

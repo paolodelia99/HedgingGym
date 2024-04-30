@@ -70,12 +70,12 @@ class SpreadHedgingEnvBase(Env):
         self._spread_prices = self._get_spread_prices()
         self._deltas_1, self._deltas_2 = self._get_deltas()
         self._hedging_portfolio_value = self._spread_prices[0]
-        self._current_hedging_delta_1 = -self._deltas_1[0]
-        self._current_hedging_delta_2 = -self._deltas_2[0]
-        self._back_account_value = (
+        self._current_hedging_delta_1 = self._deltas_1[0]
+        self._current_hedging_delta_2 = self._deltas_2[0]
+        self._back_account_value = -(
             self._hedging_portfolio_value
-            - self.current_hedging_delta_1 * self.s1_0
-            - self.current_hedging_delta_2 * self.s2_0
+            + self.current_hedging_delta_1 * self.s1_0
+            + self.current_hedging_delta_2 * self.s2_0
             - self._get_transaction_costs(
                 self.current_hedging_delta_1, self.current_hedging_delta_2
             )

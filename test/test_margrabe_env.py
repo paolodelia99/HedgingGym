@@ -72,11 +72,11 @@ def test_reset_cont():
         "m_delta_2": m_delta_2,
         "stock_1": s1_0,
         "stock_2": s2_0,
-        "current_delta_1": -m_delta_1,
-        "current_delta_2": -m_delta_2,
+        "current_delta_1": m_delta_1,
+        "current_delta_2": m_delta_2,
         "log(S_2/S_1)": log_ratio,
         "hedge_portfolio_value": spread_price,
-        "bank_account": 15.921075323618034,
+        "bank_account": -0.010054131948372787,
     }
     expected_obs = np.array(
         [
@@ -87,8 +87,8 @@ def test_reset_cont():
             m_delta_1,
             m_delta_2,
             1.0,
-            -m_delta_1,
-            -m_delta_2,
+            m_delta_1,
+            m_delta_2,
         ],
         dtype=np.float32,
     )
@@ -96,3 +96,56 @@ def test_reset_cont():
     assert np.array_equal(obs, expected_obs)
     for key in expected_info:
         assert np.isclose(info[key], expected_info[key])
+
+
+def test_margrabe_step():
+    env = MargrabeEnvCont(
+        s1_0,
+        s2_0,
+        expiry,
+        r,
+        mu_1,
+        mu_2,
+        sigma_1,
+        sigma_2,
+        corr,
+        n_steps,
+        0.01,
+    )
+    obs, info = env.reset(seed=SEED)
+    dt = expiry / n_steps
+    stock_path_1, stock_path_2 = env._stock_path_1, env._stock_path_2
+
+    expected_spread_prices = np.asarray(
+        [
+            margrabe(stock_path_2[i], stock_path_1[i], expiry - i * dt, sigma_1, sigma_2, corr)
+            for i in range(n_steps)
+        ]
+    )
+    expected_deltas = np.asarray(
+        [
+            margrabe_deltas(stock_path_2[i], stock_path_1[i], expiry - i * dt, sigma_1, sigma_2, corr)
+            for i in range(n_steps)
+        ]
+    )
+    expected_delta_1 = expected_deltas[:, 0]
+    expected_delta_2 = expected_deltas[:, 1]
+
+    spread_prices = [info["price"]]
+    deltas_1 = [info["m_delta_1"]]
+    deltas_2 = [info["m_delta_2"]]
+
+    for _ in range(252):
+        action = np.array([0.0, 0.0], dtype=np.float32)
+        obs, reward, done, info = env.step(action)
+
+        spread_prices.append(info["price"])
+        deltas_1.append(info["m_delta_1"])
+        deltas_2.append(info["m_delta_2"])
+
+        if done:
+            break
+    
+    assert np.allclose(np.asarray(spread_prices), expected_spread_prices)
+    assert np.allclose(np.asarray(deltas_1), expected_delta_1)
+    assert np.allclose(np.asarray(deltas_2), expected_delta_2)

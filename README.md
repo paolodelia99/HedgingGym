@@ -13,7 +13,7 @@ Hedging Gym is a reinforcement learning environment for training and testing hed
 To install Hedging Gym, run the following command:
 
 ```bash
-pip install <not available yet>
+pip install hedging-gym
 ```
 
 ## Usage
