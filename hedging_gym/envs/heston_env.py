@@ -74,8 +74,8 @@ class HestonEnvBase(HedgingEnvBase):
 
         paths, variance_p = heston_process.sample_paths(self.expiry, self.n_steps, 1)
         paths_np = np.asarray(paths)
-        variance_p = np.asarray(variance_p).squeeze()
-        self._variance_process = variance_p
+        variance_p = np.asarray(variance_p).squeeze()  # type: ignore
+        self._variance_process = variance_p  # type: ignore
 
         return paths_np
 
