@@ -10,3 +10,6 @@
 **/venv/
 
 test/*.ipynb
+
+dist/**
+hedging_gym.egg-info/**

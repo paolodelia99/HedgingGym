@@ -1,3 +1,39 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hedging-gym"
+authors = [
+  { name="Paolo D'Elia", email="paolo.delia99@gmail.com"}
+]
+description = "HedgingGym is a reinforcement learning environment for training and testing hedging strategies."
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Intended Audience :: Education",
+    "Intended Audience :: Developers"
+]
+dependencies = [
+    "gymnasium==0.29.1",
+    "numpy==1.26.4",
+    "JaxFin==0.3.3",
+    "jax==0.4.23"
+]
+dynamic = ["version"]
+
+[tool.setuptools.packages.find]
+include = ["hedging_gym*"]
+exclude = ["test*"]
+
+[tool.setuptools_scm]
+
 [tool.pytest.ini_options]
 pythonpath = [
     "."
