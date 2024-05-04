@@ -2,7 +2,6 @@ import gymnasium
 import numpy as np
 from jaxfin.price_engine.black_scholes import delta_european, european_price
 
-from hedging_gym.envs.bs_env import BlackScholesEnvCont, BlackScholesEnvDis
 from hedging_gym.utils.env_checker import check_env
 
 s0 = 100.0
@@ -58,7 +57,16 @@ def test_check_env_dis():
 
 
 def test_reset_cont():
-    env = BlackScholesEnvCont(s0, strike, expiry, r, mu, sigma, n_steps)
+    env = gymnasium.make(
+        "CallHedgingBSCont-v0",
+        s0=s0,
+        strike=strike,
+        expiry=expiry,
+        r=r,
+        mu=mu,
+        sigma=sigma,
+        n_steps=n_steps,
+    )
     obs, info = env.reset(seed=SEED)
 
     bs_delta_0 = delta_european(s0, strike, expiry, sigma, r)
@@ -84,7 +92,16 @@ def test_reset_cont():
 
 
 def test_reset_dis():
-    env = BlackScholesEnvDis(s0, strike, expiry, r, mu, sigma, n_steps)
+    env = gymnasium.make(
+        "CallHedgingBSDiscrete-v0",
+        s0=s0,
+        strike=strike,
+        expiry=expiry,
+        r=r,
+        mu=mu,
+        sigma=sigma,
+        n_steps=n_steps,
+    )
     obs, info = env.reset(seed=SEED)
 
     bs_delta_0 = 0.5398278
@@ -110,10 +127,19 @@ def test_reset_dis():
 
 
 def test_step():
-    env = BlackScholesEnvCont(s0, strike, expiry, r, mu, sigma, n_steps, 0.00)
+    env = gymnasium.make(
+        "CallHedgingBSCont-v0",
+        s0=s0,
+        strike=strike,
+        expiry=expiry,
+        r=r,
+        mu=mu,
+        sigma=sigma,
+        n_steps=n_steps,
+    )
     obs, info = env.reset(seed=SEED)
     dt = expiry / n_steps
-    stock_path = env._stock_path[:, 0]
+    stock_path = env.unwrapped.stock_path[:, 0]
 
     expected_call_prices = np.asarray(
         [

@@ -1,3 +1,4 @@
+import gymnasium
 import numpy as np
 
 from hedging_gym.envs.margrabe_env import MargrabeEnvCont
@@ -22,18 +23,18 @@ np.random.seed(SEED)
 
 
 def test_check_env_cont():
-    env = MargrabeEnvCont(
-        s1_0,
-        s2_0,
-        expiry,
-        r,
-        mu_1,
-        mu_2,
-        sigma_1,
-        sigma_2,
-        corr,
-        n_steps,
-        0.01,
+    env = gymnasium.make(
+        "MargrabeHedgingCont-v0",
+        s1_0=s1_0,
+        s2_0=s2_0,
+        expiry=expiry,
+        r=r,
+        mu_1=mu_1,
+        mu_2=mu_2,
+        sigma_1=sigma_1,
+        sigma_2=sigma_2,
+        corr=corr,
+        n_steps=n_steps,
     )
 
     try:
@@ -45,18 +46,18 @@ def test_check_env_cont():
 
 
 def test_reset_cont():
-    env = MargrabeEnvCont(
-        s1_0,
-        s2_0,
-        expiry,
-        r,
-        mu_1,
-        mu_2,
-        sigma_1,
-        sigma_2,
-        corr,
-        n_steps,
-        0.01,
+    env = gymnasium.make(
+        "MargrabeHedgingCont-v0",
+        s1_0=s1_0,
+        s2_0=s2_0,
+        expiry=expiry,
+        r=r,
+        mu_1=mu_1,
+        mu_2=mu_2,
+        sigma_1=sigma_1,
+        sigma_2=sigma_2,
+        corr=corr,
+        n_steps=n_steps,
     )
     obs, info = env.reset(seed=SEED)
 
@@ -99,22 +100,22 @@ def test_reset_cont():
 
 
 def test_margrabe_step():
-    env = MargrabeEnvCont(
-        s1_0,
-        s2_0,
-        expiry,
-        r,
-        mu_1,
-        mu_2,
-        sigma_1,
-        sigma_2,
-        corr,
-        n_steps,
-        0.01,
+    env = gymnasium.make(
+        "MargrabeHedgingCont-v0",
+        s1_0=s1_0,
+        s2_0=s2_0,
+        expiry=expiry,
+        r=r,
+        mu_1=mu_1,
+        mu_2=mu_2,
+        sigma_1=sigma_1,
+        sigma_2=sigma_2,
+        corr=corr,
+        n_steps=n_steps,
     )
     obs, info = env.reset(seed=SEED)
     dt = expiry / n_steps
-    stock_path_1, stock_path_2 = env._stock_path_1, env._stock_path_2
+    stock_path_1, stock_path_2 = env.unwrapped.stock_path_1, env.unwrapped.stock_path_2
 
     expected_spread_prices = np.asarray(
         [

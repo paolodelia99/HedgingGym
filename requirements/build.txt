@@ -4,4 +4,6 @@ mypy==1.9.0
 numpy==1.26.4
 JaxFin==0.3.3
 jax==0.4.23
+jaxlib==0.4.23
 pytest==8.1.1
+scipy==1.11.4

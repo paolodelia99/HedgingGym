@@ -62,8 +62,8 @@ class SpreadHedgingEnvBase(Env):
         self._lambda = 0.1
         self._tick_size = tick_size
 
-    def reset(self, seed=None):
-        super().reset(seed=seed)
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed, options=options)
 
         self._current_step = 0
         self._stock_path_1, self._stock_path_2 = self._generate_stock_path()
@@ -213,6 +213,14 @@ class SpreadHedgingEnvBase(Env):
     @property
     def current_hedging_delta_2(self):
         return self._current_hedging_delta_2
+    
+    @property
+    def stock_path_1(self):
+        return self._stock_path_1
+    
+    @property
+    def stock_path_2(self):
+        return self._stock_path_2
 
     @current_hedging_delta_2.setter
     def current_hedging_delta_2(self, new_hedge: float):

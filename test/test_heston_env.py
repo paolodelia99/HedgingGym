@@ -1,3 +1,4 @@
+import gymnasium
 import numpy as np
 from jaxfin.price_engine.fft import delta_call_fourier, fourier_inv_call
 
@@ -21,8 +22,19 @@ SEED = 0
 
 
 def test_check_env_cont():
-    env = HestonEnvCont(
-        s0, strike, expiry, r, mu, v0, kappa, theta, sigma, rho, n_steps
+    env = gymnasium.make(
+        "CallHedgingHestonCont-v0",
+        s0=s0,
+        strike=strike,
+        expiry=expiry,
+        r=r,
+        mu=mu,
+        v0=v0,
+        kappa=kappa,
+        theta=theta,
+        sigma=sigma,
+        rho=rho,
+        n_steps=n_steps,
     )
 
     try:
@@ -34,7 +46,20 @@ def test_check_env_cont():
 
 
 def test_check_env_dis():
-    env = HestonEnvDis(s0, strike, expiry, r, mu, v0, kappa, theta, sigma, rho, n_steps)
+    env = gymnasium.make(
+        "CallHedgingHestonDiscrete-v0",
+        s0=s0,
+        strike=strike,
+        expiry=expiry,
+        r=r,
+        mu=mu,
+        v0=v0,
+        kappa=kappa,
+        theta=theta,
+        sigma=sigma,
+        rho=rho,
+        n_steps=n_steps,
+    )
 
     try:
         check_env(env)
@@ -45,8 +70,19 @@ def test_check_env_dis():
 
 
 def test_reset_cont():
-    env = HestonEnvCont(
-        s0, strike, expiry, r, mu, v0, kappa, theta, sigma, rho, n_steps
+    env = gymnasium.make(
+        "CallHedgingHestonCont-v0",
+        s0=s0,
+        strike=strike,
+        expiry=expiry,
+        r=r,
+        mu=mu,
+        v0=v0,
+        kappa=kappa,
+        theta=theta,
+        sigma=sigma,
+        rho=rho,
+        n_steps=n_steps,
     )
     obs, info = env.reset(seed=SEED)
 
@@ -73,7 +109,20 @@ def test_reset_cont():
 
 
 def test_reset_dis():
-    env = HestonEnvDis(s0, strike, expiry, r, mu, v0, kappa, theta, sigma, rho, n_steps)
+    env = gymnasium.make(
+        "CallHedgingHestonDiscrete-v0",
+        s0=s0,
+        strike=strike,
+        expiry=expiry,
+        r=r,
+        mu=mu,
+        v0=v0,
+        kappa=kappa,
+        theta=theta,
+        sigma=sigma,
+        rho=rho,
+        n_steps=n_steps,
+    )
     obs, info = env.reset(seed=SEED)
 
     bs_delta_0 = 0.6048372
@@ -99,13 +148,24 @@ def test_reset_dis():
 
 
 def test_step():
-    env = HestonEnvCont(
-        s0, strike, expiry, r, mu, v0, kappa, theta, sigma, rho, n_steps
+    env = gymnasium.make(
+        "CallHedgingHestonCont-v0",
+        s0=s0,
+        strike=strike,
+        expiry=expiry,
+        r=r,
+        mu=mu,
+        v0=v0,
+        kappa=kappa,
+        theta=theta,
+        sigma=sigma,
+        rho=rho,
+        n_steps=n_steps,
     )
     obs, info = env.reset(seed=SEED)
     dt = expiry / n_steps
-    stock_path = env._stock_path[:, 0]
-    var_process = env._variance_process
+    stock_path = env.unwrapped.stock_path[:, 0]
+    var_process = env.unwrapped.variance_process
 
     expected_call_prices = np.asarray(
         [

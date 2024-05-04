@@ -54,8 +54,8 @@ class HedgingEnvBase(Env):
         self._lambda = 0.1
         self._tick_size = ticksize
 
-    def reset(self, seed=None):
-        super().reset(seed=seed)
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed, options=options)
 
         self._current_step = 0
         self._current_pnl = 0.0
@@ -178,6 +178,10 @@ class HedgingEnvBase(Env):
     @current_hedging_delta.setter
     def current_hedging_delta(self, new_hedge: float):
         self._current_hedging_delta = new_hedge
+
+    @property
+    def stock_path(self):
+        return self._stock_path
 
     def _get_log_ratio(self):
         if self._current_step == -1:
