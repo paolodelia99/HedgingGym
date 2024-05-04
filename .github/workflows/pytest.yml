@@ -20,4 +20,4 @@ jobs:
         pip install -r requirements/build.txt
     - name: Running the tests
       run: |
-        pytest --no-header -vv --html=test_report.html --self-contained-html
+        pytest --no-header -vv
