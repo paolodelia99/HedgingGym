@@ -105,11 +105,12 @@ def test_step():
     obs, info = env.reset(seed=SEED)
     dt = expiry / n_steps
     stock_path = env._stock_path[:, 0]
+    var_process = env._variance_process
 
     expected_call_prices = np.asarray(
         [
             fourier_inv_call(
-                s, strike, expiry - i * dt, v0, mu, theta, sigma, kappa, rho
+                s, strike, expiry - i * dt, var_process[i], mu, theta, sigma, kappa, rho
             )
             for i, s in enumerate(stock_path)
         ]
@@ -117,7 +118,7 @@ def test_step():
     expected_deltas = np.asarray(
         [
             delta_call_fourier(
-                s, strike, expiry - i * dt, v0, mu, theta, sigma, kappa, rho
+                s, strike, expiry - i * dt, var_process[i], mu, theta, sigma, kappa, rho
             )
             for i, s in enumerate(stock_path)
         ]

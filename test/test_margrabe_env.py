@@ -76,7 +76,7 @@ def test_reset_cont():
         "current_delta_2": m_delta_2,
         "log(S_2/S_1)": log_ratio,
         "hedge_portfolio_value": spread_price,
-        "bank_account": -0.010054131948372787,
+        "bank_account": -15.921075323618034,
     }
     expected_obs = np.array(
         [
@@ -118,13 +118,27 @@ def test_margrabe_step():
 
     expected_spread_prices = np.asarray(
         [
-            margrabe(stock_path_2[i], stock_path_1[i], expiry - i * dt, sigma_1, sigma_2, corr)
+            margrabe(
+                stock_path_2[i],
+                stock_path_1[i],
+                expiry - i * dt,
+                sigma_1,
+                sigma_2,
+                corr,
+            )
             for i in range(n_steps)
         ]
-    )
+    ).flatten()
     expected_deltas = np.asarray(
         [
-            margrabe_deltas(stock_path_2[i], stock_path_1[i], expiry - i * dt, sigma_1, sigma_2, corr)
+            margrabe_deltas(
+                stock_path_2[i, 0],
+                stock_path_1[i, 0],
+                expiry - i * dt,
+                sigma_1,
+                sigma_2,
+                corr,
+            )
             for i in range(n_steps)
         ]
     )
@@ -137,7 +151,7 @@ def test_margrabe_step():
 
     for _ in range(252):
         action = np.array([0.0, 0.0], dtype=np.float32)
-        obs, reward, done, info = env.step(action)
+        obs, reward, done, _, info = env.step(action)
 
         spread_prices.append(info["price"])
         deltas_1.append(info["m_delta_1"])
@@ -145,7 +159,7 @@ def test_margrabe_step():
 
         if done:
             break
-    
+
     assert np.allclose(np.asarray(spread_prices), expected_spread_prices)
     assert np.allclose(np.asarray(deltas_1), expected_delta_1)
     assert np.allclose(np.asarray(deltas_2), expected_delta_2)

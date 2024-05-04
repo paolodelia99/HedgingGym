@@ -1,5 +1,5 @@
-import numpy as np
 import gymnasium
+import numpy as np
 from jaxfin.price_engine.black_scholes import delta_european, european_price
 
 from hedging_gym.envs.bs_env import BlackScholesEnvCont, BlackScholesEnvDis
@@ -19,7 +19,7 @@ SEED = 0
 
 def test_check_env_cont():
     env = gymnasium.make(
-        'CallHedgingBSCont-v0',
+        "CallHedgingBSCont-v0",
         s0=s0,
         strike=strike,
         expiry=expiry,
@@ -39,7 +39,7 @@ def test_check_env_cont():
 
 def test_check_env_dis():
     env = gymnasium.make(
-        'CallHedgingBSDiscrete-v0',
+        "CallHedgingBSDiscrete-v0",
         s0=s0,
         strike=strike,
         expiry=expiry,
