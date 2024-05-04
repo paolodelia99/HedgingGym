@@ -1,0 +1,7 @@
+black==24.3.0
+gymnasium==0.29.1
+mypy==1.9.0
+numpy==1.26.4
+JaxFin==0.3.3
+jax==0.4.23
+pytest==8.1.1
