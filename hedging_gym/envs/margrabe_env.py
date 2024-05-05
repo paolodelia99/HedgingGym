@@ -3,8 +3,7 @@ from typing import Tuple
 import jax.numpy as jnp
 import numpy as np
 from gymnasium import spaces
-from gymnasium.spaces import Box, Discrete
-from jax import vmap
+from gymnasium.spaces import Box
 from jaxfin.models.gbm import MultiGeometricBrownianMotion
 
 from ..base.spread_env import SpreadHedgingEnvBase

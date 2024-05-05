@@ -1,7 +1,6 @@
 import gymnasium
 import numpy as np
 
-from hedging_gym.envs.margrabe_env import MargrabeEnvCont
 from hedging_gym.math import margrabe, margrabe_deltas
 from hedging_gym.utils.env_checker import check_env
 
@@ -77,7 +76,7 @@ def test_reset_cont():
         "current_delta_2": m_delta_2,
         "log(S_2/S_1)": log_ratio,
         "hedge_portfolio_value": spread_price,
-        "bank_account": -15.921075323618034,
+        "bank_account": -15.93112564086914,
     }
     expected_obs = np.array(
         [

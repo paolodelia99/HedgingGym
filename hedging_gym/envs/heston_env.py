@@ -119,7 +119,7 @@ class HestonEnvBase(HedgingEnvBase):
                 for i in range(self.n_steps)
             ]
         )
-    
+
     @property
     def variance_process(self):
         return self._variance_process

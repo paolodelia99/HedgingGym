@@ -76,9 +76,6 @@ class SpreadHedgingEnvBase(Env):
             self._hedging_portfolio_value
             + self.current_hedging_delta_1 * self.s1_0
             + self.current_hedging_delta_2 * self.s2_0
-            - self._get_transaction_costs(
-                self.current_hedging_delta_1, self.current_hedging_delta_2
-            )
         )
 
         observations = self._get_observations()
@@ -116,11 +113,6 @@ class SpreadHedgingEnvBase(Env):
         self.current_hedging_delta_2 = new_delta_2
 
     def _calculate_reward(self) -> float:
-        if self._current_step == 1:
-            return -self._get_transaction_costs(
-                self.current_hedging_delta_1, self.current_hedging_delta_2
-            )
-
         pnl = self._calculate_pnl()
         return pnl - self._lambda / 2 * pnl**2
 
@@ -139,18 +131,6 @@ class SpreadHedgingEnvBase(Env):
         )[0]
         ddelta_1 = self._ddelta_1
         ddelta_2 = self._ddelta_2
-
-        if self._current_step == (self.n_steps - 1):
-            liquidation_value = self._get_transaction_costs(
-                self.current_hedging_delta_1, self.current_hedging_delta_2
-            )
-            return (
-                dv
-                + self.current_hedging_delta_1 * ds_1
-                + self.current_hedging_delta_2 * ds_2
-                - self._get_transaction_costs(ddelta_1, ddelta_2)
-                - liquidation_value
-            )
 
         return (
             dv
@@ -213,18 +193,18 @@ class SpreadHedgingEnvBase(Env):
     @property
     def current_hedging_delta_2(self):
         return self._current_hedging_delta_2
-    
-    @property
-    def stock_path_1(self):
-        return self._stock_path_1
-    
-    @property
-    def stock_path_2(self):
-        return self._stock_path_2
 
     @current_hedging_delta_2.setter
     def current_hedging_delta_2(self, new_hedge: float):
         self._current_hedging_delta_2 = new_hedge
+
+    @property
+    def stock_path_1(self):
+        return self._stock_path_1
+
+    @property
+    def stock_path_2(self):
+        return self._stock_path_2
 
     def _get_log_ratio(self):
         if self._current_step == -1:
@@ -260,21 +240,7 @@ class SpreadHedgingEnvBase(Env):
             + self._current_hedging_delta_1 * stock_1
             + self._current_hedging_delta_2 * stock_2
         )
-
-        if self._current_step == (self.n_steps - 1):
-            liquidation_value = self._get_transaction_costs(
-                self.current_hedging_delta_1, self.current_hedging_delta_2
-            )
-            transcation_costs = (
-                self._get_transaction_costs(
-                    self.current_hedging_delta_1, self.current_hedging_delta_2
-                )
-                + liquidation_value
-            )
-        else:
-            transcation_costs = self._get_transaction_costs(
-                self._ddelta_1, self._ddelta_2
-            )
+        transcation_costs = self._get_transaction_costs(self._ddelta_1, self._ddelta_2)
 
         self._back_account_value = (
             new_hedging_port_value

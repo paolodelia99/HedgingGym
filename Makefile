@@ -8,11 +8,11 @@ type:
 	mypy ${LINT_PATHS}
 
 lint:
-	ruff check src --output-format=full
+	ruff check ${LINT_PATHS} --output-format=full
 
 complete-lint:
 	lint
-	pylint src --output-format=text:pylint_res.txt,colorized
+	pylint ${LINT_PATHS} --output-format=text:pylint_res.txt,colorized
 
 format:
 	isort ${LINT_PATHS}

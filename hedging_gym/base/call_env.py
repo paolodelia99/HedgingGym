@@ -65,9 +65,7 @@ class HedgingEnvBase(Env):
         self._hedging_portfolio_value = self._call_prices[0]
         self._current_hedging_delta = -self._deltas[0]
         self._back_account_value = -(
-            self._hedging_portfolio_value
-            + self.current_hedging_delta * self.s0
-            - self._get_transaction_costs(self.current_hedging_delta)
+            self._hedging_portfolio_value + self.current_hedging_delta * self.s0
         )
 
         observations = self._get_observations()
@@ -107,9 +105,6 @@ class HedgingEnvBase(Env):
         self.current_hedging_delta = new_delta
 
     def _calculate_reward(self) -> float:
-        if self._current_step == 1:
-            return -self._get_transaction_costs(self.current_hedging_delta)
-
         pnl = self._calculate_pnl()
         self._current_pnl = pnl
         return pnl - self._lambda / 2 * pnl**2
@@ -124,15 +119,6 @@ class HedgingEnvBase(Env):
             - self._stock_path[self._current_step - 1]
         )[0]
         ddelta = self._ddelta
-
-        if self._current_step == (self.n_steps - 1):
-            liquidation_value = self._get_transaction_costs(self.current_hedging_delta)
-            return (
-                dv
-                + self.current_hedging_delta * ds
-                - self._get_transaction_costs(ddelta)
-                - liquidation_value
-            )
 
         return (
             dv + self.current_hedging_delta * ds - self._get_transaction_costs(ddelta)
@@ -209,16 +195,7 @@ class HedgingEnvBase(Env):
             self._back_account_value
             + self._current_hedging_delta * self._get_current_stock_price()
         )
-
-        if self._current_step == (self.n_steps - 1):
-            liquidation_value = self._get_transaction_costs(self.current_hedging_delta)
-            transcation_costs = (
-                self._get_transaction_costs(self.current_hedging_delta)
-                + liquidation_value
-            )
-        else:
-            transcation_costs = self._get_transaction_costs(self._ddelta)
-
+        transcation_costs = self._get_transaction_costs(self._ddelta)
         self._back_account_value = (
             new_hedging_port_value
             - new_delta * self._get_current_stock_price()
